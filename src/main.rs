@@ -9,7 +9,7 @@ use esp_idf_svc::{
 	sys::{esp_restart, link_patches},
 };
 use log::{error, info};
-use std::{sync::mpsc, time::Instant};
+use std::sync::mpsc;
 
 mod broker;
 mod config;
@@ -18,7 +18,7 @@ mod peripherals;
 mod report;
 mod sensors;
 
-const REFRESH_RATE: u32 = 100u32; // 100ms for faster presence detection
+const REFRESH_RATE: u32 = 250u32; // 250ms for slower presence detection
 
 fn main() -> anyhow::Result<()> {
 	let delay: Delay = Default::default();
@@ -35,13 +35,10 @@ fn main() -> anyhow::Result<()> {
 	let mut network = Network::new(board.modem, board.sys_loop, board.nvs, config.clone());
 
 	let mut reporter = None;
-	let mut last_connected = None;
 
 	match network.init() {
 		Ok(_) => {
 			info!("Network initialized");
-			last_connected = Some(Instant::now());
-
 			match Broker::new(config.clone(), tx.clone()) {
 				Ok(broker) => {
 					reporter = Some(Reporter::new(config.clone(), broker));
@@ -49,11 +46,17 @@ fn main() -> anyhow::Result<()> {
 				}
 				Err(e) => {
 					error!("Broker initialization failed: {e}");
+					unsafe {
+						esp_restart();
+					}
 				}
 			}
 		}
 		Err(e) => {
 			error!("Network initialization failed: {e}");
+			unsafe {
+				esp_restart();
+			}
 		}
 	}
 
@@ -93,7 +96,7 @@ fn main() -> anyhow::Result<()> {
 							if let Err(e) = sensors.calibrate() {
 								error!("Calibration failed: {:?}", e);
 							} else {
-								info!("Calibration started (60s scan)");
+								info!("Calibration started (120s scan)");
 							}
 						}
 						"restart" => {
@@ -107,23 +110,10 @@ fn main() -> anyhow::Result<()> {
 		}
 
 		if !network.is_connected() {
-			if let Some(lc) = last_connected {
-				if lc.elapsed().as_secs() > 600 {
-					info!("Connection lost for more than 10 minutes, trying to reconnect...");
-					match network.init() {
-						Ok(_) => {
-							info!("Reconnected to wifi");
-							last_connected = Some(Instant::now());
-						}
-						Err(e) => {
-							error!("Reconnect failed: {e}");
-							last_connected = None;
-						}
-					}
-				}
+			error!("Connection lost");
+			unsafe {
+				esp_restart();
 			}
-		} else {
-			last_connected = Some(Instant::now());
 		}
 
 		match sensors.measure() {

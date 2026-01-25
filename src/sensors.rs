@@ -6,7 +6,7 @@ pub struct Sensors<'a> {
 	sensor: LD2410S<EspUartWrapper<'a>>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct PresenceData {
 	pub occupied: bool,
 	pub distance: u16,

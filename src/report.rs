@@ -5,7 +5,6 @@ use log::info;
 pub struct Reporter<'a> {
 	config: Config,
 	broker: Broker<'a>,
-	last_report: Option<PresenceData>,
 }
 
 impl<'a> Reporter<'a> {
@@ -13,17 +12,10 @@ impl<'a> Reporter<'a> {
 		Self {
 			config,
 			broker,
-			last_report: None,
 		}
 	}
 
 	pub fn report(&mut self, data: PresenceData) -> Result<(), Error> {
-		if let Some(last) = &self.last_report {
-			if *last == data {
-				return Ok(());
-			}
-		}
-
 		let topic = format!("{}/{}/state", self.config.program_name, self.config.client_id);
 		let payload = format!(
 			r#"{{
@@ -34,7 +26,6 @@ impl<'a> Reporter<'a> {
 		);
 
 		self.broker.publish(&topic, &payload)?;
-		self.last_report = Some(data);
 
 		Ok(())
 	}
