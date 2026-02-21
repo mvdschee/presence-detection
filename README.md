@@ -1,3 +1,5 @@
+# WORK IN PROGRESS 👷‍♂️
+
 # Presence Detection (Rust + ESP32-C3 + LD2410S)
 
 This project implements a presence detection node for Home Assistant using the **ESP32-C3 Super Mini** and the **HLK-LD2410S** mmWave radar sensor. It is written in Rust using the `esp-idf-svc` framework.
