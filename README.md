@@ -2,62 +2,45 @@
 
 # Presence Detection (Rust + ESP32-C3 + LD2410S)
 
-This project implements a presence detection node for Home Assistant using the **ESP32-C3 Super Mini** and the **HLK-LD2410S** mmWave radar sensor. It is written in Rust using the `esp-idf-svc` framework.
+A presence sensor for Home Assistant: an **ESP32-C3 Super Mini** reads an
+**HLK-LD2410S** mmWave radar and broadcasts occupancy and distance as
+[BTHome v2](https://bthome.io) over Bluetooth LE. Home Assistant discovers it
+on its own, with no Wi-Fi, broker or pairing. It's `no_std` Rust on esp-hal,
+built to move to battery power later.
 
 ## Hardware
 
-- **MCU:** ESP32-C3 Super Mini (or generic ESP32-C3)
-- **Sensor:** Hi-Link HLK-LD2410S (mmWave Radar)
+- **MCU:** ESP32-C3 Super Mini
+- **Sensor:** Hi-Link HLK-LD2410S
+- Wiring: see [docs/setup.md](docs/setup.md#3-wiring-esp32-c3-super-mini-ld2410s)
 
-## Software Prerequisites
+Home Assistant needs Bluetooth in range: an adapter on its host or an ESPHome
+Bluetooth proxy.
 
-- [Rust Toolchain](https://www.rust-lang.org/tools/install) (Nightly required, configured in `rust-toolchain.toml`)
-- [ESP-IDF Prerequisites](https://docs.espressif.com/projects/rust/book/getting-started/index.html)
-- [ESP-IDF Template](https://github.com/esp-rs/esp-idf-template) (we follow the instructions from the template because we are NOT using 'no_std' environment)
+## Build and flash
 
-## Setup & Configuration
+Needs [probe-rs](https://probe.rs) (`cargo install --locked probe-rs-tools@0.32.0`);
+`rustup` fetches the toolchain from `rust-toolchain.toml`.
 
-1.  **Configure Environment Variables:**
-    Copy the example configuration and fill in your details (WiFi credentials, MQTT broker).
-    ```sh
-    cp .env.example .env
-    ```
-    Edit `.env` with your actual values:
-    ```ini
-    WIFI_SSID="YourWiFiName"
-    WIFI_PASS="YourWiFiPassword"
-    MQTT_USERNAME="mqtt_user"
-    MQTT_PASSWORD="mqtt_password"
-    MQTT_HOST="192.168.1.100"
-    MQTT_PORT="1883"
-    ```
+```sh
+make run     # flash over USB and stream logs
+make test    # core tests on the host
+make check   # clippy and fmt
+```
 
-## Building & Running
+## Calibrate
 
-1.  **Setup Environment (on startup of the project):**
-    We need to setup the linker to compile for the right env
-    You need to run this for every time you start the project.
+Mount the sensor where it stays, then hold the **BOOT** button for 3 s and
+leave the room within 30 s. The sensor scans the empty room for 120 s.
 
-    ```sh
-    make init
-    ```
+## Docs
 
-2.  **Build the project:**
-    This will compile the ESP-IDF framework and the application. The first run will take significantly longer as it builds the entire framework.
-
-    ```sh
-    make build
-    ```
-
-3.  **Flash and Monitor:**
-    Connect your ESP32-C3 via USB and run:
-    ```sh
-    make dev
-    ```
-    This command will build, flash the firmware to the device, and open the serial monitor to see the logs.
+- [docs/ble.md](docs/ble.md): design, BTHome frame, battery plan
+- [docs/setup.md](docs/setup.md): tools, wiring, log
+- [DECISIONS.md](DECISIONS.md): why it's built this way
 
 ## Resources
 
-- [esp-idf-svc Documentation](https://github.com/esp-rs/esp-idf-svc)
-- [ld2410s Driver Source](https://github.com/mvdschee/ld2410s)
-- [Rust on ESP Book](https://docs.esp-rs.org/book/)
+- [ld2410s driver](https://github.com/mvdschee/ld2410s)
+- [esp-hal](https://github.com/esp-rs/esp-hal)
+- [BTHome format](https://bthome.io/format/)
