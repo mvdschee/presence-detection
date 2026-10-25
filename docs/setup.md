@@ -51,4 +51,7 @@ leave the room within 30 s (fast flashing), and the sensor then scans for
   starts. Walking in front of the sensor gives "occupied" within a second,
   and sitting still at about 1.4 m keeps it occupied. Home Assistant
   discovers the BTHome device on its own, and occupancy follows. Not tested
-  yet: calibration via BOOT, and running for hours without the probe.
+  yet: running for hours without the probe.
+- 2026-10-25: the blue LED follows presence. A BOOT calibration ran: fast
+  flashing for the countdown, slow flashing during the scan, then presence
+  again.

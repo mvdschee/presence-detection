@@ -136,6 +136,6 @@ crates/
 - **Automatic:** `make check` (clippy, fmt), `make test` (BTHome bytes and
   the change rule on the host), and `make run` to flash and log over
   probe-rs.
-- **On hardware:** HA discovers the device and occupancy follows. Still
-  untested: calibration with BOOT, and running for hours without the probe
-  attached.
+- **On hardware:** HA discovers the device and occupancy follows, the LED
+  follows presence, and a BOOT calibration runs through countdown, scan and
+  back. Still untested: running for hours without the probe attached.
