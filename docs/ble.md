@@ -65,6 +65,11 @@ core models::advertisement: BTHome bytes -> services/ble: HCI LE Set Adv Data
   The main loop then waits 30 s, so there's time to leave the room, and
   starts the sensor's 120 s auto-threshold scan. The sensor stays in Minimal
   mode afterwards, so no re-init is needed.
+- The blue LED (GPIO8, active low) is on while occupied and off while clear.
+  It flashes fast during the 30 s countdown and slowly during the scan. It
+  shows presence again at the sensor's 100% progress frame, or at the first
+  reading 135 s after the scan started if that frame gets lost. The red LED
+  is tied to 3V3 and can't be switched (worth removing for battery power).
 
 ## Layout
 
@@ -79,7 +84,8 @@ crates/
         ├── services/
         │   ├── sensor.rs # UART + ld2410s: init, next reading, calibrate
         │   ├── ble.rs    # BleConnector + HCI: start, advertise
-        │   └── button.rs # BOOT long press -> signal
+        │   ├── button.rs # BOOT long press -> signal
+        │   └── led.rs    # blue LED: off, on, blink
         ├── config.rs     # name, intervals, calibration parameters
         ├── error.rs
         └── main.rs       # esp-hal init, heap, main loop

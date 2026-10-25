@@ -15,9 +15,9 @@ mod services;
 use defmt::{Debug2Format, info, warn};
 use embassy_executor::Spawner;
 use embassy_futures::select::{Either, select};
-use embassy_time::{Duration, Timer};
+use embassy_time::{Duration, Instant, Timer};
 use esp_hal::{
-	gpio::{Input, InputConfig, Pull},
+	gpio::{Input, InputConfig, Level, Output, OutputConfig, Pull},
 	timer::timg::TimerGroup,
 	uart::{self, Uart},
 };
@@ -28,7 +28,12 @@ use presence_core::{
 };
 
 pub use error::{Error, Result};
-use services::{ble::Ble, button, sensor::Sensor};
+use services::{
+	ble::Ble,
+	button,
+	led::{self, Mode},
+	sensor::{Event, Sensor},
+};
 
 // app descriptor the esp-idf bootloader expects
 esp_bootloader_esp_idf::esp_app_desc!();
@@ -59,6 +64,9 @@ async fn main(spawner: Spawner) -> ! {
 	let boot = Input::new(p.GPIO9, InputConfig::default().with_pull(Pull::Up));
 	let hold = Duration::from_secs(config::CALIBRATE_HOLD_SECS);
 	spawner.spawn(button::watch(boot, hold).expect("button task already running"));
+	// the blue LED, active low: starts off
+	let blue = Output::new(p.GPIO8, Level::High, OutputConfig::default());
+	spawner.spawn(led::run(blue).expect("led task already running"));
 
 	// Until the first reading, advertise "clear": a fresh boot hasn't seen anyone.
 	let mut state = PresenceState {
@@ -77,26 +85,64 @@ async fn main(spawner: Spawner) -> ! {
 	}
 	info!("sensor ready");
 
+	// Some while a scan runs: when to give up waiting for its 100% frame.
+	// The LED shows the scan until then, not presence.
+	let mut scan_deadline: Option<Instant> = None;
 	loop {
-		match select(sensor.next_reading(), button::LONG_PRESS.wait()).await {
-			Either::First(reading) => {
-				let Some(next) = next_state(Some(state), reading, config::DISTANCE_STEP_CM) else {
-					continue;
-				};
-				state = next;
-				packet_id = packet_id.wrapping_add(1);
-				info!("occupied={} distance={}cm", state.occupied, state.distance_cm);
-				let adv = Advertisement::bthome(&state, packet_id, config::DEVICE_NAME);
-				if let Err(e) = ble.advertise(&adv).await {
-					warn!("advertise: {}", Debug2Format(&e));
+		match select(sensor.next_event(), button::LONG_PRESS.wait()).await {
+			Either::First(Event::Reading(reading)) => {
+				if scan_deadline.is_some_and(|d| Instant::now() >= d) {
+					warn!("no 100% from the scan; showing presence again");
+					scan_deadline = None;
+				}
+				if let Some(next) = next_state(Some(state), reading, config::DISTANCE_STEP_CM) {
+					state = next;
+					packet_id = packet_id.wrapping_add(1);
+					info!("occupied={} distance={}cm", state.occupied, state.distance_cm);
+					let adv = Advertisement::bthome(&state, packet_id, config::DEVICE_NAME);
+					if let Err(e) = ble.advertise(&adv).await {
+						warn!("advertise: {}", Debug2Format(&e));
+					}
+				}
+				if scan_deadline.is_none() {
+					led::set(if state.occupied {
+						Mode::On
+					} else {
+						Mode::Off
+					});
+				}
+			},
+			Either::First(Event::Calibration(progress)) => {
+				info!("calibration {}%", progress);
+				if progress >= 100 {
+					scan_deadline = None;
+					led::set(if state.occupied {
+						Mode::On
+					} else {
+						Mode::Off
+					});
 				}
 			},
 			Either::Second(()) => {
 				info!("calibrating in {}s: leave the room", config::CALIBRATE_DELAY_SECS);
+				led::set(Mode::Blink(Duration::from_millis(config::BLINK_COUNTDOWN_MS)));
 				Timer::after_secs(config::CALIBRATE_DELAY_SECS).await;
 				match sensor.calibrate().await {
-					Ok(()) => info!("calibration started ({}s scan)", config::CALIBRATE_SCAN_SECS),
-					Err(e) => warn!("calibration: {}", Debug2Format(&e)),
+					Ok(()) => {
+						info!("calibration started ({}s scan)", config::CALIBRATE_SCAN_SECS);
+						led::set(Mode::Blink(Duration::from_millis(config::BLINK_SCAN_MS)));
+						scan_deadline = Some(
+							Instant::now() + Duration::from_secs(config::CALIBRATE_GIVE_UP_SECS),
+						);
+					},
+					Err(e) => {
+						warn!("calibration: {}", Debug2Format(&e));
+						led::set(if state.occupied {
+							Mode::On
+						} else {
+							Mode::Off
+						});
+					},
 				}
 			},
 		}

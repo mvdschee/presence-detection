@@ -21,3 +21,10 @@ pub const CALIBRATE_DELAY_SECS: u64 = 30;
 pub const CALIBRATE_TRIGGER_FACTOR: u16 = 2;
 pub const CALIBRATE_RETENTION_FACTOR: u16 = 1;
 pub const CALIBRATE_SCAN_SECS: u16 = 120;
+/// If the sensor's 100% frame gets lost, the LED stops blinking at the first
+/// reading this long after the scan started.
+pub const CALIBRATE_GIVE_UP_SECS: u64 = CALIBRATE_SCAN_SECS as u64 + 15;
+
+/// LED half-periods: fast while counting down to the scan, slow during it.
+pub const BLINK_COUNTDOWN_MS: u64 = 125;
+pub const BLINK_SCAN_MS: u64 = 500;

@@ -31,7 +31,9 @@ make check   # clippy and fmt
 ## Calibrate
 
 Mount the sensor where it stays, then hold the **BOOT** button for 3 s and
-leave the room within 30 s. The sensor scans the empty room for 120 s.
+leave the room within 30 s (the blue LED flashes fast). The sensor then
+scans the empty room for 120 s (slow flashing). Otherwise the blue LED is on
+while someone is present.
 
 ## Docs
 

@@ -38,9 +38,12 @@ is needed.
 | RX | GPIO20 (TX) |
 | OT2 (presence out) | GPIO3, for the battery version's wake-up, unused now |
 
+The blue on-board LED (GPIO8) shows presence and flashes during calibration.
+
 Power the sensor from the C3's 3V3, not from a USB-serial adapter's 3V3
 pin, whose noise can make an empty room read as occupied. Calibrate where it's mounted: hold BOOT for 3 s,
-leave the room within 30 s, and the sensor then scans for 120 s.
+leave the room within 30 s (fast flashing), and the sensor then scans for
+120 s (slow flashing).
 
 ## Log
 
