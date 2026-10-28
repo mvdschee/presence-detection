@@ -15,16 +15,30 @@ presence-core = { path = "../core" }
 
 # HAL and runtime
 esp-hal = { version = "=1.2.2", features = ["defmt", "esp32c3", "unstable"] }
-esp-rtos = { version = "=0.4.0", features = ["defmt", "embassy", "esp-alloc", "esp-radio", "esp32c3"] }
+esp-rtos = { version = "=0.4.0", features = [
+	"defmt",
+	"embassy",
+	"esp-alloc",
+	"esp-radio",
+	"esp32c3",
+] }
 esp-bootloader-esp-idf = { version = "=0.6.0", features = ["defmt", "esp32c3"] }
 esp-alloc = { version = "=0.11.0", features = ["defmt", "esp32c3"] }
 
 # BLE: esp-radio's controller, driven with raw HCI commands
-esp-radio = { version = "=1.0.0-beta.1", features = ["ble", "defmt", "esp-alloc", "esp32c3", "unstable"] }
+esp-radio = { version = "=1.0.0-beta.1", features = [
+	"ble",
+	"defmt",
+	"esp-alloc",
+	"esp32c3",
+	"unstable",
+] }
 bt-hci = { version = "0.9.0", features = ["defmt"] }
 
 # Sensor
-ld2410s = { git = "https://github.com/mvdschee/ld2410s.git", tag = "v0.2.0", features = ["async"] }
+ld2410s = { git = "https://github.com/mvdschee/ld2410s.git", tag = "v0.2.1", features = [
+	"async",
+] }
 
 # Async
 embassy-executor = { version = "=0.10.0", features = ["defmt"] }

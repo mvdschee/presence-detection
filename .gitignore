@@ -1,7 +1,6 @@
 /.zed
 /.embuild
 /target
-/Cargo.lock
 
 .DS_Store
 .env
