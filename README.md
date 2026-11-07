@@ -3,10 +3,10 @@
 # Presence Detection (Rust + ESP32-C3 + LD2410S)
 
 A presence sensor for Home Assistant: an **ESP32-C3 Super Mini** reads an
-**HLK-LD2410S** mmWave radar and broadcasts occupancy and distance as
+**HLK-LD2410S** mmWave radar and broadcasts occupancy as
 [BTHome v2](https://bthome.io) over Bluetooth LE. Home Assistant discovers it
 on its own, with no Wi-Fi, broker or pairing. It's `no_std` Rust on esp-hal,
-built to move to battery power later.
+and it deep sleeps between changes, ready to move to battery power later.
 
 ## Hardware
 
@@ -28,12 +28,16 @@ make test    # core tests on the host
 make check   # clippy and fmt
 ```
 
+The board deep sleeps 60 s after a plug-in or reset, which also ends USB. Press
+RST first if it's asleep, then flash within those 60 s.
+
 ## Calibrate
 
-Mount the sensor where it stays, then hold the **BOOT** button for 3 s and
-leave the room within 30 s (the blue LED flashes fast). The sensor then
-scans the empty room for 120 s (slow flashing). Otherwise the blue LED is on
-while someone is present.
+Mount the sensor where it stays and press **RST**. Within 60 s, hold the
+**BOOT** button for 3 s and leave the room within 30 s (the blue LED flashes
+fast). The sensor then scans the empty room for 120 s (slow flashing). During
+those first 60 s the blue LED is otherwise on while someone is present; it stays
+off once the board sleeps.
 
 ## Docs
 

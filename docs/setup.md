@@ -23,6 +23,9 @@ is needed.
   until Ctrl-C. With more than one board plugged in, set `PRESENCE_PROBE` in
   `.env` to the `VID:PID:serial` from `probe-rs list`.
 - Per-reading logs: `DEFMT_LOG=presence_firmware=debug,info make run`.
+- The board deep sleeps 60 s after a plug-in or reset. USB-JTAG goes with it, so
+  `make run` then ends with a probe error, which is expected. To flash a sleeping
+  board, press RST and run `make run` within the 60 s.
 - `make test` _(works)_: core tests on the Mac.
 - `make check` _(works)_: clippy for core (host and riscv32imc) and firmware,
   plus a fmt check. rustfmt warns that `imports_granularity` needs nightly;
@@ -36,14 +39,15 @@ is needed.
 | GND | GND |
 | OT1 (TX) | GPIO21 (RX) |
 | RX | GPIO20 (TX) |
-| OT2 (presence out) | GPIO3, for the battery version's wake-up, unused now |
+| OT2 (presence out) | GPIO3, wakes the chip from deep sleep |
 
-The blue on-board LED (GPIO8) shows presence and flashes during calibration.
+The blue on-board LED (GPIO8) shows presence during the 60 s after a plug-in or
+reset, and flashes during calibration. It's off while the board sleeps.
 
 Power the sensor from the C3's 3V3, not from a USB-serial adapter's 3V3
-pin, whose noise can make an empty room read as occupied. Calibrate where it's mounted: hold BOOT for 3 s,
-leave the room within 30 s (fast flashing), and the sensor then scans for
-120 s (slow flashing).
+pin, whose noise can make an empty room read as occupied. Calibrate where it's mounted: press RST, within
+60 s hold BOOT for 3 s, leave the room within 30 s (fast flashing), and the
+sensor then scans for 120 s (slow flashing).
 
 ## Log
 
@@ -55,3 +59,5 @@ leave the room within 30 s (fast flashing), and the sensor then scans for
 - 2026-10-25: the blue LED follows presence. A BOOT calibration ran: fast
   flashing for the countdown, slow flashing during the scan, then presence
   again.
+- 2026-11-06: deep sleep with OT2 wake and a 10 min heartbeat written. `make
+  check` and `make test` pass. Not run on hardware yet.

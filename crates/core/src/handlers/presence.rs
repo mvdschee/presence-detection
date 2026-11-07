@@ -1,22 +1,16 @@
-use crate::models::presence::{PresenceState, Reading};
+use crate::models::presence::PresenceState;
 
-/// The state to advertise next, or `None` when the current advertisement still
-/// holds. It changes on occupancy, or when the distance moves by at least
-/// `distance_step_cm`, so 8 readings a second don't each become a new packet.
-pub fn next_state(
-	prev: Option<PresenceState>,
-	reading: Reading,
-	distance_step_cm: u16,
-) -> Option<PresenceState> {
-	let next = PresenceState::from(reading);
-	match prev {
-		Some(prev)
-			if prev.occupied == next.occupied
-				&& prev.distance_cm.abs_diff(next.distance_cm) < distance_step_cm =>
-		{
-			None
-		},
-		_ => Some(next),
+/// The state to advertise next. A change of occupancy gets a new packet id. No
+/// change keeps the id, so receivers drop the repeat, but one that missed the
+/// change still accepts it.
+pub fn next_state(prev: PresenceState, occupied: bool) -> PresenceState {
+	if prev.occupied == occupied {
+		prev
+	} else {
+		PresenceState {
+			occupied,
+			packet_id: prev.packet_id.wrapping_add(1),
+		}
 	}
 }
 
@@ -24,47 +18,37 @@ pub fn next_state(
 mod tests {
 	use super::*;
 
-	const STEP: u16 = 25;
-
-	fn reading(occupied: bool, distance_cm: u16) -> Reading {
-		Reading {
+	fn state(occupied: bool, packet_id: u8) -> PresenceState {
+		PresenceState {
 			occupied,
-			distance_cm,
+			packet_id,
 		}
 	}
 
-	fn state(occupied: bool, distance_cm: u16) -> Option<PresenceState> {
-		Some(PresenceState {
-			occupied,
-			distance_cm,
-		})
+	#[test]
+	fn a_change_gets_a_new_packet_id() {
+		assert_eq!(next_state(state(false, 3), true), state(true, 4));
+		assert_eq!(next_state(state(true, 4), false), state(false, 5));
 	}
 
 	#[test]
-	fn first_reading_is_advertised() {
-		assert_eq!(next_state(None, reading(true, 100), STEP), state(true, 100));
+	fn no_change_keeps_the_packet_id() {
+		assert_eq!(next_state(state(true, 4), true), state(true, 4));
+		assert_eq!(next_state(state(false, 4), false), state(false, 4));
 	}
 
 	#[test]
-	fn occupancy_change_is_advertised() {
-		assert_eq!(next_state(state(false, 0), reading(true, 100), STEP), state(true, 100));
-		assert_eq!(next_state(state(true, 100), reading(false, 100), STEP), state(false, 0));
+	fn packet_id_wraps() {
+		assert_eq!(next_state(state(false, u8::MAX), true), state(true, 0));
 	}
 
 	#[test]
-	fn small_distance_change_is_not() {
-		assert_eq!(next_state(state(true, 100), reading(true, 124), STEP), None);
-		assert_eq!(next_state(state(true, 100), reading(true, 76), STEP), None);
-	}
-
-	#[test]
-	fn distance_step_is_advertised() {
-		assert_eq!(next_state(state(true, 100), reading(true, 125), STEP), state(true, 125));
-		assert_eq!(next_state(state(true, 100), reading(true, 75), STEP), state(true, 75));
-	}
-
-	#[test]
-	fn distance_while_clear_is_ignored() {
-		assert_eq!(next_state(state(false, 0), reading(false, 300), STEP), None);
+	fn consecutive_changes_never_share_a_packet_id() {
+		let mut prev = state(false, 0);
+		for i in 0..=u16::from(u8::MAX) * 2 {
+			let next = next_state(prev, i % 2 == 0);
+			assert_ne!(next.packet_id, prev.packet_id);
+			prev = next;
+		}
 	}
 }

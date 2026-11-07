@@ -24,3 +24,18 @@
 **Decision:** `next_state` returns a new state only when occupancy flips or the distance moves by at least `DISTANCE_STEP_CM` (25). Distance is 0 while clear.
 **Why:** The sensor reports several times a second and distance jitters by a few cm; each new state bumps the BTHome packet id and becomes an HA state change. Sitting still at ~1.4 m varied by about ±5 cm.
 **Alternatives:** Advertise every reading (HA history fills with noise); time-based throttling (delays real changes).
+
+## 2026-11-06 - Deep sleep on OT2 with a 60 s awake window, no awake build
+**Decision:** After a deep-sleep wake the firmware reads OT2, advertises for 1 s and sleeps again, waking on the opposite OT2 level or a 10 min heartbeat. Any other reset first stays awake for 60 s, for flashing, logs and BOOT calibration. There is one firmware, with no always-awake mode.
+**Why:** Sleep behaviour should run on mains now, so it's proven before the battery arrives. Deep sleep cuts USB-JTAG and BOOT (GPIO9) can't wake the chip, so a window after reset is what keeps the board flashable and calibratable.
+**Alternatives:** esp-rtos auto light sleep (esp-radio holds a `WakeLock` while BLE runs, so it would never sleep); a cargo feature for an awake build (easier before/after comparison, more code to keep working).
+
+## 2026-11-06 - Occupancy only, from OT2; distance leaves the advertisement
+**Decision:** OT2 is the source of occupancy everywhere, also in the awake window. The BTHome frame no longer carries distance, and the frame is trigger based (`0x44`). This replaces the 25 cm step rule from 2026-10-25. The UART still runs in the awake window for setup, calibration and logs.
+**Why:** The chip is off between wakes, so a distance would go stale right away. Reading a UART frame on each wake would add up to 2 s awake at the lowest report rate. Using OT2 in the awake window too means the wake signal gets exercised where logs can still show it.
+**Alternatives:** One distance reading per wake (a stale snapshot, longer awake time); UART as the source while awake and OT2 while asleep (two sources that can disagree at the switch).
+
+## 2026-11-06 - Packet id and occupancy in RTC fast memory
+**Decision:** Both live in `#[ram(unstable(rtc_fast, persistent))]` atomics. A change bumps the id; a heartbeat keeps it.
+**Why:** Each wake is a reset, and receivers drop an id equal to the last one, so an id that restarted could hide a real change. Keeping the id on a heartbeat avoids extra HA events, and still repairs a change HA missed, since HA hasn't seen that id.
+**Alternatives:** Bump the id on every wake (a heartbeat becomes an HA event); a `static mut` (the firmware forbids unsafe code).
