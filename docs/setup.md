@@ -61,3 +61,9 @@ sensor then scans for 120 s (slow flashing).
   again.
 - 2026-11-06: deep sleep with OT2 wake and a 10 min heartbeat written. `make
   check` and `make test` pass. Not run on hardware yet.
+- 2026-11-08: ld2410s 0.3.0. The first hardware run of the sleep cycle
+  showed the board never slept: it hung in esp-hal's sleep entry, waiting on
+  the UART that the awake window had dropped. With the sensor kept alive until
+  sleep, `make run` ends with a probe error at 60 s, and leaving and entering
+  the room both reach HA from deep sleep. Not checked yet: the heartbeat, an
+  hour without HA marking it unavailable, and the current drop on a USB meter.

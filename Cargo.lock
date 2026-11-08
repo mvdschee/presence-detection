@@ -1442,9 +1442,9 @@ checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
 
 [[package]]
 name = "ld2410s"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0593c1c181bb66149fcf397d224955a8796386908214584f68265a6e204abb00"
+checksum = "b07cd31fe949a8bd6850389c5b46e00b876077cac36215fe38e208c62cacfc79"
 dependencies = [
  "embassy-time",
  "embedded-io-async 0.7.0",

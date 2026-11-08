@@ -13,7 +13,7 @@ only wakes when the sensor's OT2 output changes, plus a heartbeat.
 | BLE controller | `esp-radio`, feature `ble` | `=1.0.0-beta.1` |
 | HCI commands | `bt-hci` `ExternalController` | `0.9.0` (esp-radio's) |
 | Heap (radio blobs need it) | `esp-alloc` | `=0.11.0` |
-| Sensor | `ld2410s`, async driver | git tag `v0.2.0` |
+| Sensor | `ld2410s`, async driver | `0.3.0` (crates.io) |
 | Logs, flashing | defmt + rtt-target, probe-rs runner | probe-rs 0.32.0 |
 | Target | `riscv32imc-unknown-none-elf` (C3 has no atomics) | Rust 1.99.0 |
 
@@ -153,6 +153,10 @@ crates/
   error when the board sleeps; that's expected. To flash a sleeping board, press
   RST and flash within the 60 s window. The window is the recovery path, so
   anything that shortens it risks needing BOOT + RST download mode.
+- **A dropped UART hangs sleep entry.** esp-hal waits for every UART's TX
+  FIFO to drain before sleeping, also one whose driver was dropped. Its clock
+  is gated then, so a stale count never drains and the chip never sleeps.
+  `main` keeps the sensor alive until the chip sleeps for this reason.
 - **Cancelling a future resets its timers.** Selecting a fresh long-press
   future against each reading restarted the 3 s hold on every reading, so
   calibration never triggered. That's why the button has its own task.
@@ -161,11 +165,11 @@ crates/
 
 - **Automatic:** `make check` (clippy, fmt) and `make test` (BTHome bytes and
   the packet id rule on the host). These say nothing about sleep itself.
-- **On hardware, verified:** none of the sleep cycle yet. See the log in
-  `docs/setup.md`.
-- **On hardware, to check:** the RTT log shows OT2 following the UART's state,
-  the board sleeps after 60 s, arriving and leaving both reach HA, HA doesn't
-  mark it unavailable over an hour, and the heartbeat doesn't add HA events.
+- **On hardware, verified:** the RTT log shows OT2 following the UART's state,
+  the board sleeps after 60 s, and arriving and leaving both reach HA from deep
+  sleep. See the log in `docs/setup.md`.
+- **On hardware, to check:** HA doesn't mark it unavailable over an hour, and
+  the heartbeat doesn't add HA events.
 - **Only a person can judge:** how long HA takes to react now, whether detection
   feels as reliable, and whether the drop on the USB meter is worth what was
   given up. The red LED and regulator leave a floor of a few mA on that meter, so

@@ -42,7 +42,7 @@ esp_bootloader_esp_idf::esp_app_desc!();
 
 #[allow(
 	clippy::large_stack_frames,
-	reason = "the awake window owns the sensor driver (about 2 KB)"
+	reason = "holds the awake window future (about 1.6 KB); runs once per boot"
 )]
 #[esp_rtos::main]
 async fn main(spawner: Spawner) -> ! {
@@ -68,6 +68,9 @@ async fn main(spawner: Spawner) -> ! {
 		.await
 		.expect("ble start");
 
+	// Lives until the chip sleeps: sleep entry waits for every UART's TX FIFO to
+	// drain, and a dropped UART's clock is gated, so its stale count never drains.
+	let mut sensor = None;
 	if !sleep::woke_from_deep_sleep() {
 		info!(
 			"presence booted, advertising as {}: occupied={} packet_id={}",
@@ -89,7 +92,7 @@ async fn main(spawner: Spawner) -> ! {
 		let blue = Output::new(p.GPIO8, Level::High, OutputConfig::default());
 		spawner.spawn(led::run(blue).expect("led task already running"));
 
-		state = awake_window(Sensor::new(uart), &ot2, &ble, state).await;
+		state = awake_window(sensor.insert(Sensor::new(uart)), &ot2, &ble, state).await;
 		led::set(Mode::Off);
 		info!(
 			"awake window over, deep sleep ends this log: occupied={} packet_id={}",
@@ -112,10 +115,10 @@ async fn main(spawner: Spawner) -> ! {
 /// the state last advertised.
 #[allow(
 	clippy::large_stack_frames,
-	reason = "owns the sensor driver (about 2 KB); runs once per boot"
+	reason = "the sensor's command futures and select3 (about 1.3 KB); runs once per boot"
 )]
 async fn awake_window(
-	mut sensor: Sensor<'_>,
+	sensor: &mut Sensor<'_>,
 	ot2: &Input<'_>,
 	ble: &Ble<'_>,
 	mut state: PresenceState,

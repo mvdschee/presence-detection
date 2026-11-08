@@ -18,10 +18,6 @@ pub struct Sensor<'d> {
 }
 
 impl<'d> Sensor<'d> {
-	#[allow(
-		clippy::large_stack_frames,
-		reason = "the driver's parse buffer is about 2 KB; built once at boot"
-	)]
 	pub fn new(uart: Uart<'d, Async>) -> Self {
 		Self {
 			driver: LD2410SAsync::new(uart, OutputMode::Minimal),
