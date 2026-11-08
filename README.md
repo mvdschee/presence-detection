@@ -50,3 +50,8 @@ off once the board sleeps.
 - [ld2410s driver](https://github.com/mvdschee/ld2410s)
 - [esp-hal](https://github.com/esp-rs/esp-hal)
 - [BTHome format](https://bthome.io/format/)
+
+## License
+
+Copyright (c) 2026 Max van der Schee. Licensed under the [EUPL-1.2](LICENSE).
+A commercial license is available for use outside the EUPL terms.

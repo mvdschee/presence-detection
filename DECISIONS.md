@@ -39,3 +39,8 @@
 **Decision:** Both live in `#[ram(unstable(rtc_fast, persistent))]` atomics. A change bumps the id; a heartbeat keeps it.
 **Why:** Each wake is a reset, and receivers drop an id equal to the last one, so an id that restarted could hide a real change. Keeping the id on a heartbeat avoids extra HA events, and still repairs a change HA missed, since HA hasn't seen that id.
 **Alternatives:** Bump the id on every wake (a heartbeat becomes an HA event); a `static mut` (the firmware forbids unsafe code).
+
+## 2026-11-08 - EUPL-1.2 plus a commercial license, not MIT
+**Decision:** The project moves from MIT to EUPL-1.2, matching the `ld2410s` driver, and is also offered under a separate commercial license.
+**Why:** The firmware will be sold with hardware. EUPL makes anyone who ships changed firmware share the source; a commercial license covers buyers who don't want to. Dual licensing only works while all code has one copyright holder.
+**Alternatives:** Keep MIT (anyone can sell it closed); a noncommercial source-available license (stops others selling it, but isn't open source).
