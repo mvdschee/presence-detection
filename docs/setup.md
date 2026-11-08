@@ -67,3 +67,9 @@ sensor then scans for 120 s (slow flashing).
   sleep, `make run` ends with a probe error at 60 s, and leaving and entering
   the room both reach HA from deep sleep. Not checked yet: the heartbeat, an
   hour without HA marking it unavailable, and the current drop on a USB meter.
+- Baseline from before deep sleep (FNB58 USB meter, firmware without sleep,
+  room occupied, so the blue LED was on): 44.6 mA at 5.13 V, 0.229 W. Compare
+  the sleep firmware on the same meter and port, occupied and empty.
+- 2026-11-08: deep sleep, occupied, same meter and port: 1.14 mA at 5.15 V,
+  5.9 mW, down from 44.6 mA (about 39x less). Not measured yet: empty, and
+  the short spikes from wakes.

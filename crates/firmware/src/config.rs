@@ -12,7 +12,7 @@ pub const ADV_BURST_MS: u64 = 1000;
 /// Awake after a plug-in or reset: for flashing, logs and calibration.
 pub const AWAKE_WINDOW_SECS: u64 = 60;
 /// Deep sleep ends after this long even if occupancy hasn't changed.
-pub const HEARTBEAT_SECS: u64 = 600;
+pub const HEARTBEAT_SECS: u64 = 1800;
 
 /// Distance and status reports per second.
 pub const REPORT_HZ: f32 = 8.0;

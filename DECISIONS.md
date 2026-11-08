@@ -44,3 +44,8 @@
 **Decision:** The project moves from MIT to EUPL-1.2, matching the `ld2410s` driver, and is also offered under a separate commercial license.
 **Why:** The firmware will be sold with hardware. EUPL makes anyone who ships changed firmware share the source; a commercial license covers buyers who don't want to. Dual licensing only works while all code has one copyright holder.
 **Alternatives:** Keep MIT (anyone can sell it closed); a noncommercial source-available license (stops others selling it, but isn't open source).
+
+## 2026-11-08 - Heartbeat every 30 min, not 10
+**Decision:** `HEARTBEAT_SECS` is 1800.
+**Why:** At the sensor's lowest report rate, the 1 s wakes become the largest share of the sleeping budget; 30 min cuts them to a third. The frame is trigger based (`0x44`), so HA doesn't mark the device unavailable between heartbeats. The cost: a change HA missed takes up to 30 min to repair.
+**Alternatives:** 10 min (faster repair, roughly three times the wake cost); longer still (slower repair for a small extra gain).
